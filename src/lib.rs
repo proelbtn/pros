@@ -6,6 +6,7 @@
 #![reexport_test_harness_main = "_start_test"]
 
 pub mod interrupts;
+pub mod gdt;
 pub mod serial;
 pub mod vga_buffer;
 
@@ -58,6 +59,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 }
 
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
 }
 
