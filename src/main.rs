@@ -24,8 +24,14 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
+    pros::init();
+
+    x86_64::instructions::interrupts::int3();
+
     #[cfg(test)]
     _start_test();
+
+    println!("It did not crash!");
 
     loop {}
 }
