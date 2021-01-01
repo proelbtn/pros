@@ -1,4 +1,7 @@
-use crate::{print, println};
+pub mod keyboard;
+pub mod timer;
+
+use crate::println;
 use crate::gdt::DOUBLE_FAULT_IST_INDEX;
 
 use lazy_static::lazy_static;
@@ -25,9 +28,9 @@ lazy_static! {
                 .set_stack_index(DOUBLE_FAULT_IST_INDEX);
         }
         idt[InterruptIndex::Timer.into()]
-            .set_handler_fn(timer_interrupt_handler);
+            .set_handler_fn(timer::interrupt_handler);
         idt[InterruptIndex::Keyboard.into()]
-            .set_handler_fn(keyboard_interrupt_handler);
+            .set_handler_fn(keyboard::interrupt_handler);
         idt
     };
 }
@@ -63,10 +66,6 @@ pub fn pic_remap() {
     }
 }
 
-pub fn read_keyboard() -> u8 {
-    unsafe { KEYBOARD.read() }
-}
-
 pub fn end_of_interrupt(idx: InterruptIndex) {
     if (idx as u8) >= PIC2_OFFSET {
         unsafe { PIC2_COMMAND.write(PIC_EOI) };
@@ -94,29 +93,6 @@ extern "x86-interrupt" fn double_fault_handler(
     stack_frame: &mut InterruptStackFrame, _error_code: u64) -> !
 {
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
-}
-
-extern "x86-interrupt" fn timer_interrupt_handler(
-    _stack_frame: &mut InterruptStackFrame)
-{
-    print!(".");
-    end_of_interrupt(InterruptIndex::Timer);
-}
-
-extern "x86-interrupt" fn keyboard_interrupt_handler(
-    _stack_frame: &mut InterruptStackFrame)
-{
-    let code = read_keyboard();
-
-    match code {
-        0x2..=0x0B => {
-            let num = (code - 0x1) % 10;
-            print!("{}", num);
-        },
-        _ => ()
-    };
-
-    end_of_interrupt(InterruptIndex::Keyboard);
 }
 
 #[test_case]
