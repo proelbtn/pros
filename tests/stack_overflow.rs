@@ -26,7 +26,6 @@ extern "x86-interrupt" fn test_double_fault_handler(
 ) -> ! {
     pros::serial_println!("[PASSED]");
     pros::exit_qemu(pros::QemuExitCode::Success);
-    loop {}
 }
 
 #[no_mangle] // don't mangle the name of this function
