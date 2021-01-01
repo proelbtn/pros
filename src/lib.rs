@@ -34,13 +34,15 @@ pub enum QemuExitCode {
     Failed = 0x11,
 }
 
-pub fn exit_qemu(exit_code: QemuExitCode) {
+pub fn exit_qemu(exit_code: QemuExitCode) -> ! {
     use x86_64::instructions::port::Port;
 
     unsafe {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
+
+    hlt_loop();
 }
 
 pub fn test_runner(tests: &[&dyn Testable]) {
@@ -55,12 +57,17 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[FAILED]\n");
     serial_println!("Error: {}\n", info);
     exit_qemu(QemuExitCode::Failed);
-    loop {}
 }
 
 pub fn init() {
     gdt::init();
-    interrupts::init_idt();
+    interrupts::init();
+}
+
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 #[cfg(test)]
@@ -68,7 +75,7 @@ pub fn init() {
 pub extern "C" fn _start() -> ! {
     init();
     _start_test();
-    loop {}
+    hlt_loop();
 }
 
 #[cfg(test)]

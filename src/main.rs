@@ -11,7 +11,6 @@ use pros::println;
 fn panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);
     pros::exit_qemu(pros::QemuExitCode::Failed);
-    loop {}
 }
 
 #[cfg(test)]
@@ -31,5 +30,5 @@ pub extern "C" fn _start() -> ! {
 
     println!("It did not crash!");
 
-    loop {}
+    pros::hlt_loop();
 }
