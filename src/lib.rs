@@ -2,14 +2,18 @@
 #![cfg_attr(test, no_main)]
 #![feature(abi_x86_interrupt)]
 #![feature(custom_test_frameworks)]
+#![feature(alloc_error_handler)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "_start_test"]
 
+pub mod allocator;
 pub mod interrupts;
 pub mod gdt;
 pub mod memory;
 pub mod serial;
 pub mod vga_buffer;
+
+extern crate alloc;
 
 use core::panic::PanicInfo;
 
@@ -60,9 +64,15 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     exit_qemu(QemuExitCode::Failed);
 }
 
-pub fn init() {
+#[alloc_error_handler]
+fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
+    panic!("allocation error: {:?}", layout);
+}
+
+pub fn init(boot_info: &'static bootloader::BootInfo) {
     gdt::init();
     interrupts::init();
+    memory::init(boot_info);
 }
 
 pub fn hlt_loop() -> ! {
@@ -75,8 +85,8 @@ pub fn hlt_loop() -> ! {
 bootloader::entry_point!(test_kernel_main);
 
 #[cfg(test)]
-fn test_kernel_main(_boot_info: &'static bootloader::BootInfo) -> ! {
-    init();
+fn test_kernel_main(boot_info: &'static bootloader::BootInfo) -> ! {
+    init(boot_info);
     _start_test();
     hlt_loop();
 }

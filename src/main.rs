@@ -4,8 +4,11 @@
 #![test_runner(pros::test_runner)]
 #![reexport_test_harness_main = "_start_test"]
 
-use pros::{memory::active_level4_table, println};
-use x86_64::VirtAddr;
+extern crate alloc;
+
+use pros::println;
+
+// use alloc::boxed::Box;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -23,24 +26,20 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 bootloader::entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static bootloader::BootInfo) -> ! {
-    use x86_64::structures::paging::MapperAllSizes;
+    use x86_64::{PhysAddr, VirtAddr};
+    use x86_64::structures::paging::{Page, PhysFrame, PageTableFlags};
     println!("Hello World{}", "!");
 
-    pros::init();
+    pros::init(boot_info);
 
-    let mut mapper = unsafe { pros::memory::init(boot_info) };
-    let mut frame_allocator = unsafe {
-        pros::memory::BootInfoFrameAllocator::init(&boot_info.memory_map)
-    };
+    let page = Page::containing_address(VirtAddr::new(0x0));
+    let frame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
+    let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
 
-    // map an unused page
-    let page = x86_64::structures::paging::Page::containing_address(VirtAddr::new(0xdeadbeaf000));
-    pros::memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+    pros::memory::map_to(page, frame, flags).unwrap().flush();
 
-    // write the string `New!` to the screen through the new mapping
     let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
     unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e)};
-
 
     #[cfg(test)]
     _start_test();
