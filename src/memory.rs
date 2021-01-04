@@ -23,6 +23,16 @@ unsafe fn init_unsafe(boot_info: &'static bootloader::BootInfo) {
     })
 }
 
+pub fn map_to_new(page: Page, flags: PageTableFlags) 
+    -> Result<MapperFlush<Size4KiB>, MapToError<Size4KiB>>
+{
+    let mapper = unsafe { MAPPER.as_mut().expect(ERROR_MESSAGE) };
+    let allocator = unsafe { ALLOCATOR.as_mut().expect(ERROR_MESSAGE) };
+    let frame = allocator.allocate_frame().ok_or(MapToError::FrameAllocationFailed)?;
+
+    unsafe { map_to_unsafe(mapper, allocator, page, frame, flags) }
+}
+
 pub fn map_to(page: Page, frame: PhysFrame, flags: PageTableFlags) 
     -> Result<MapperFlush<Size4KiB>, MapToError<Size4KiB>>
 {

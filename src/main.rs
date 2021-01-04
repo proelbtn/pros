@@ -8,7 +8,7 @@ extern crate alloc;
 
 use pros::println;
 
-// use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -26,23 +26,19 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 bootloader::entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static bootloader::BootInfo) -> ! {
-    use x86_64::{PhysAddr, VirtAddr};
-    use x86_64::structures::paging::{Page, PhysFrame, PageTableFlags};
     println!("Hello World{}", "!");
 
     pros::init(boot_info);
 
-    let page = Page::containing_address(VirtAddr::new(0x0));
-    let frame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
-    let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
-
-    pros::memory::map_to(page, frame, flags).unwrap().flush();
-
-    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
-    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e)};
-
     #[cfg(test)]
     _start_test();
+
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
+    }
+
+    println!("vec at {:p}", vec.as_slice());
 
     println!("It did not crash!");
 

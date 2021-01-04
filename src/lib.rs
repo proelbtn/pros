@@ -73,6 +73,7 @@ pub fn init(boot_info: &'static bootloader::BootInfo) {
     gdt::init();
     interrupts::init();
     memory::init(boot_info);
+    allocator::init().unwrap();
 }
 
 pub fn hlt_loop() -> ! {
